@@ -56,3 +56,7 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () =>
   console.log('🚀 Playwright API running')
 );
+app.get('/scrape-attt', (req, res) => {
+  res.send('✅ API Playwright OK – utilisez POST');
+});
+

@@ -6,10 +6,31 @@ app.use(express.json());
 
 const API_KEY = process.env.API_KEY || 'SECRET123';
 
+/* 🔎 Test */
+app.get('/', (req, res) => {
+  res.send('✅ API Playwright ATTT OK');
+});
+
+/* 🚀 Scraper ATTT avec URL dynamique */
 app.post('/scrape-attt', async (req, res) => {
 
+  // 🔐 Sécurité API
   if (req.headers['x-api-key'] !== API_KEY) {
-    return res.status(403).json({ error: 'Forbidden' });
+    return res.status(403).json({ success: false, error: 'Forbidden' });
+  }
+
+  const { url } = req.body;
+
+  // 🔐 Validation URL
+  if (
+    !url ||
+    !url.startsWith('https://www.attt.com.tn/') ||
+    !url.startsWith('https://attt.com.tn/')
+  ) {
+    return res.json({
+      success: false,
+      error: 'URL invalide ou non autorisée'
+    });
   }
 
   try {
@@ -27,36 +48,60 @@ app.post('/scrape-attt', async (req, res) => {
 
     const page = await context.newPage();
 
-    await page.goto('https://www.attt.com.tn', {
-      waitUntil: 'networkidle',
+    await page.goto(url, {
+      waitUntil: 'domcontentloaded',
       timeout: 60000
     });
 
-    await page.waitForTimeout(4000);
+    // attendre contenu réel
+    await page.waitForSelector('table', { timeout: 15000 });
+    await page.waitForTimeout(3000);
 
-    const data = await page.$$eval('a', els =>
-      els
-        .filter(a => a.innerText.trim())
-        .map(a => ({
-          text: a.innerText.trim(),
-          link: a.href
-        }))
-    );
+    /* 🧠 Extraction générique (table ATTT) */
+    const results = await page.evaluate(() => {
+      const data = [];
+      const table = document.querySelector('table');
+      if (!table) return data;
+
+      const rows = table.querySelectorAll('tr');
+
+      rows.forEach((row, index) => {
+        if (index === 0) return;
+
+        const cols = row.querySelectorAll('td');
+        if (cols.length < 2) return;
+
+        const item = {
+          col1: cols[0]?.innerText.trim() || '',
+          col2: cols[1]?.innerText.trim() || '',
+          col3: cols[2]?.innerText.trim() || '',
+          link: cols[2]?.querySelector('a')?.href || null
+        };
+
+        if (item.col1) data.push(item);
+      });
+
+      return data;
+    });
 
     await browser.close();
 
-    res.json({ success: true, count: data.length, data });
+    res.json({
+      success: true,
+      url,
+      count: results.length,
+      data: results
+    });
 
-  } catch (e) {
-    res.json({ success: false, error: e.message });
+  } catch (err) {
+    res.json({
+      success: false,
+      error: err.message
+    });
   }
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () =>
-  console.log('🚀 Playwright API running')
-);
-app.get('/scrape-attt', (req, res) => {
-  res.send('✅ API Playwright OK – utilisez POST');
+app.listen(PORT, () => {
+  console.log('🚀 Playwright ATTT scraper running');
 });
-

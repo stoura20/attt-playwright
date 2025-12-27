@@ -2,7 +2,8 @@
   "name": "attt-playwright",
   "version": "1.0.0",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "postinstall": "playwright install"
   },
   "dependencies": {
     "express": "^4.19.0",

@@ -5,9 +5,9 @@ const app = express();
 app.use(express.json());
 
 app.post('/scrape-attt', async (req, res) => {
-  const url = req.body.url;
+  const { url } = req.body;
   if (!url || !url.startsWith('https://www.attt.com.tn/')) {
-    return res.status(400).json({ error: 'URL invalide' });
+    return res.status(400).json({ success: false, error: 'URL invalide ou non autorisée' });
   }
 
   try {
@@ -23,7 +23,7 @@ app.post('/scrape-attt', async (req, res) => {
 
     await browser.close();
 
-    res.json({ success: true, html });
+    res.json({ success: true, url, html });
 
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
@@ -31,4 +31,6 @@ app.post('/scrape-attt', async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
